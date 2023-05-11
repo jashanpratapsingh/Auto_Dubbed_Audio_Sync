@@ -1,0 +1,14 @@
+google-cloud-texttospeech
+google_api_python_client
+google_auth_oauthlib
+pydub
+pyrubberband
+ffprobe-python
+azure-cognitiveservices-speech
+langcodes
+language_data
+numpy
+deepl
+regex
+youtube_transcript_api
+pytube
