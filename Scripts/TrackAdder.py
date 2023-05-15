@@ -20,21 +20,21 @@ def add_audio_tracks_to_video(tracksFolder, videoToProcess, useSoundEffectsTrack
         # The folder (or path relative to this script file) containing the audio track files to add to the video
         # Note: ALL audio tracks in the folder will be added, so ensure only the tracks you want are in there
         # A resulting copy of the original video, now with all tracks added, will also be placed in this folder
-    tracksFolder = r"./Outputs/video" 
+    tracksFolder = r"Outputs/video" 
 
         # The video can be anywhere as long as you use the full absolute filepath. Or you can use a relative path.
         # The original will remain the same, and a copy with "MultiTrack" added to the name will be created in the output folder
         # This script assumes the video is an mp4 file. I'm not sure if it will work with other formats/containers.
-    videoToProcess = r"../Scripts/video.mp4"
+    videoToProcess = r"video.mp4"
 
         # Whether to merge a sound effect track into each audio track before adding to the video
         # The original audio track files will remain unchanged
-    useSoundEffectsTrack = True
+    useSoundEffectsTrack = False
 
         # If applicable, the filename of the sound effects or music track to add to each audio track before adding to the video
         # If "useSoundEffectsTrack" is set to False, this will be ignored
         # Must be in the same folder as the audio tracks!
-    effectsTrackFileName = r"./Scripts/background.mp3"
+    effectsTrackFileName = r"background.mp3"
 
         # Whether to save a copy of each audio track with the sound effects track merged into it
         # They will go into a folder called "Merged Effects Tracks"
@@ -77,25 +77,26 @@ def add_audio_tracks_to_video(tracksFolder, videoToProcess, useSoundEffectsTrack
                 if userInput.lower() != 'y':
                     sys.exit()
 
-            # Check if the language code is valid
-            try:
-                langObject = langcodes.get(parsedLanguageCode)
-                threeLetterCode = langObject.to_alpha3()
-                languageDisplayName = langcodes.get(threeLetterCode).display_name()
+    # Check if the language code is valid
+    try:
+        langObject = langcodes.get(parsedLanguageCode)
+        threeLetterCode = langObject.to_alpha3()
+        languageDisplayName = langcodes.get(threeLetterCode).display_name()
 
-                if threeLetterCode in tracksToAddDict.keys():
-                    print(f"\ERROR while checking {file}: Language '{languageDisplayName}' is already in use by file: {tracksToAddDict[threeLetterCode]}")
-                    userInput = input("\nPress Enter to exit... ")
-                    sys.exit()
+        if threeLetterCode in tracksToAddDict.keys():
+            print(f"\ERROR while checking {file}: Language '{languageDisplayName}' is already in use by file: {tracksToAddDict[threeLetterCode]}")
+            userInput = input("\nPress Enter to exit... ")
+            sys.exit()
 
-                tracksToAddDict[threeLetterCode] = file
+        tracksToAddDict[threeLetterCode] = file
 
-            except:
-                print(f"\nWARNING: Language code '{parsedLanguageCode}' is not valid for file: {file}")
-                print("Enter 'y' to skip that track and conitnue, or enter anything else to exit.")
-                userInput = input("\nContinue Anyway and Skip File? (y/n): ")
-                if userInput.lower() != 'y':
-                    sys.exit()
+    except:
+        parsedLanguageCode = "Unknown"  # Assign a default value
+        print(f"\nWARNING: Language code '{parsedLanguageCode}' is not valid for file: {file}")
+        print("Enter 'y' to skip that track and continue, or enter anything else to exit.")
+        userInput = input("\nContinue Anyway and Skip File? (y/n): ")
+        if userInput.lower() != 'y':
+            sys.exit()
 
     print("")
 
@@ -264,5 +265,3 @@ def add_audio_tracks_to_video(tracksFolder, videoToProcess, useSoundEffectsTrack
         print("Could not delete temp directory. It may not be empty.")
 
     print("\nDone!")
-    
-add_audio_tracks_to_video("./Outputs/video", "../Scripts/video.mp4", True, "./Scripts/background.mp3", True, "eng")

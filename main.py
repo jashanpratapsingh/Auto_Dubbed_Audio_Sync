@@ -16,7 +16,8 @@ import Scripts.audio_builder as audio_builder
 import Scripts.auth as auth
 import Scripts.translate as translate
 from Scripts.utils import parseBool
-from Scripts.youtube import youtube
+from Scripts.youtube import download_youtube_and_generate_srt
+from Scripts.TrackAdder import add_audio_tracks_to_video
 
 # Import built in modules
 import re
@@ -32,10 +33,7 @@ import ffprobe
 
 
 #-----------------------------------------Downloading the youtube video---------------------------------
-youtube_url = input("Enter the youtube video url: ")
-video_output_file = "video.mp4"
-srt_output_file = "subtitles.srt"
-youtube(youtube_url, video_output_file, srt_output_file)
+download_youtube_and_generate_srt()
 
 
 #---------------------------------------- Batch File Processing ----------------------------------------
@@ -287,6 +285,11 @@ for langNum, langData in batchSettings.items():
     processedCount += 1
     # Process current fallback language
     process_language(langData, processedCount, totalLanguages)
+    
+#This code is for combing the generated audio files with the video 
+print("\n================================================================")
+print("Combining audio files with video")
+add_audio_tracks_to_video("./Outputs/video", "../Scripts/video.mp4", True, "./Scripts/background.mp3", True, "eng")
 
 # Play a system sound to indicate completion
 sound_name = winsound.MB_ICONASTERISK  # represents the 'Asterisk' system sound

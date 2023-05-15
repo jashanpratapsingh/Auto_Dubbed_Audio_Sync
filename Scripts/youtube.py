@@ -1,23 +1,39 @@
+import os
 from youtube_transcript_api import YouTubeTranscriptApi
 from pytube import YouTube
 from urllib.parse import parse_qs, urlparse
-import os
 
-def youtube(url, video_output_file, srt_output_file):
-    query = urlparse(url)
-    video_id = parse_video_id(url)
+def download_youtube_and_generate_srt():
+    def parse_video_id(url):
+        # Parse the video ID from the URL
+        query = urlparse(url)
+        if 'youtu.be' in query.netloc:
+            video_id = query.path[1:]
+        elif '/shorts/' in query.path:
+            video_id = query.path.split('/')[2]
+        else:
+            video_id = parse_qs(query.query)['v'][0]
+        return video_id
+
+    youtube_url = input("Enter the URL for the YouTube video: ")
+    video_output_file = "video.mp4"
+    srt_output_file = "subtitles.srt"
+
+    query = urlparse(youtube_url)
+    video_id = parse_video_id(youtube_url)
 
     # Create the root directory if it doesn't exist
     root_directory = os.path.dirname(os.path.abspath(__file__))
-    os.makedirs(root_directory, exist_ok=True)
+    outputs_directory = os.path.join(root_directory, "../Outputs")
+    os.makedirs(outputs_directory, exist_ok=True)
 
     # Set the full path for the video output file
-    video_output_path = os.path.join(root_directory, video_output_file)
+    video_output_path = os.path.join(outputs_directory, "video", video_output_file)
 
     # Download the YouTube video
-    yt = YouTube(url)
+    yt = YouTube(youtube_url)
     video = yt.streams.get_highest_resolution()
-    video.download(output_path=root_directory, filename=video_output_file)
+    video.download(output_path=os.path.join(outputs_directory, "video"), filename=video_output_file)
 
     # Get the transcript for the YouTube video
     transcript = YouTubeTranscriptApi.get_transcript(video_id)
@@ -43,17 +59,8 @@ def youtube(url, video_output_file, srt_output_file):
         srt_content += f"{i+1}\n{start_time} --> {end_time}\n{text}\n\n"
 
     # Set the full path for the SRT output file
-    srt_output_path = os.path.join(root_directory, srt_output_file)
+    srt_output_path = os.path.join(outputs_directory, srt_output_file)
 
     # Save the SRT content to a file
     with open(srt_output_path, 'w', encoding='utf-8') as f:
         f.write(srt_content)
-
-def parse_video_id(url):
-    # Parse the video ID from the URL
-    query = urlparse(url)
-    if 'youtu.be' in query.netloc:
-        video_id = query.path[1:]
-    else:
-        video_id = parse_qs(query.query)['v'][0]
-    return video_id

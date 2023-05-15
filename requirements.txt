@@ -12,3 +12,5 @@ deepl
 regex
 youtube_transcript_api
 pytube
+openai
+elevenlabs

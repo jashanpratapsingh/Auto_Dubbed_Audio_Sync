@@ -18,6 +18,15 @@ import Scripts.azure_batch as azure_batch
 import Scripts.utils as utils
 from Scripts.utils import parseBool
 
+
+import requests
+from elevenlabs import clone, generate, play, set_api_key
+from elevenlabs.api import History
+
+# Configuration for the elevenlabs API
+XI_API_KEY = "<xi-api-key>"
+set_api_key(XI_API_KEY)
+
 # Get variables from config
 
 # Get Azure variables if applicable
@@ -128,6 +137,8 @@ def add_phoneme_tags(text):
 
 # =============================================================================================================================
 
+#===================================THIS IS THE GOOGLE SECTION ========================================================================
+
 # Build API request for google text to speech, then execute
 def synthesize_text_google(text, speedFactor, voiceName, voiceGender, languageCode, audioEncoding=config['synth_audio_encoding'].upper()):
 
@@ -179,6 +190,9 @@ def synthesize_text_google(text, speedFactor, voiceName, voiceGender, languageCo
     # The response's audioContent is base64. Must decode to selected audio format
     decoded_audio = base64.b64decode(response['audioContent'])
     return decoded_audio
+
+
+#===========================================THIS IS A FUNCTION FOR AZURE=========================================================
 
 def synthesize_text_azure(text, duration, voiceName, languageCode):
 
@@ -410,11 +424,61 @@ def synthesize_text_azure_batch(subsDict, langDict, skipSynthesize=False, second
 
     return subsDict
 
+#=============================================THIS IS THE ELEVEN LABS SECTION==========================================================
 
+def synthesize_text_elevenlabs_batch():
+    VOICE_SAMPLE_PATH1 = "<path-to-voice-sample1>"
+    VOICE_SAMPLE_PATH2 = "<path-to-voice-sample2>"
+    add_voice_url = "<add-voice-endpoint-url>"
+
+    headers = {
+        "Accept": "application/json",
+        "xi-api-key": XI_API_KEY
+    }
+    data = {
+        'name': 'Voice name',
+        'labels': '{"accent": "American", "gender": "Female"}',
+        'description': 'An old American male voice with a slight hoarseness in his throat. Perfect for news.'
+    }
+    files = [
+        ('files', ('sample1.mp3', open(VOICE_SAMPLE_PATH1, 'rb'), 'audio/mpeg')),
+        ('files', ('sample2.mp3', open(VOICE_SAMPLE_PATH2, 'rb'), 'audio/mpeg'))
+    ]
+    response = requests.post(add_voice_url, headers=headers, data=data, files=files)
+    voice_id = response.json()["voice_id"]
+
+    # Get default voice settings
+    response = requests.get(
+        "https://api.elevenlabs.io/v1/voices/settings/default",
+        headers={"Accept": "application/json"}
+    ).json()
+    stability, similarity_boost = response["stability"], response["similarity_boost"]
+
+    # Generate speech using ElevenLabs API
+    text = "Some very long text to be read by the voice"
+    voice = clone(
+        name="Voice Name",
+        description="An old American male voice with a slight hoarseness in his throat. Perfect for news.",
+        files=["./sample1.mp3", "./sample2.mp3"],
+    )
+
+    audio = generate(text=text, voice=voice)
+
+    # Save the audio
+    OUTPUT_PATH = "<path-to-file>"
+    with open(OUTPUT_PATH, 'wb') as f:
+        f.write(audio)
+        
+
+
+#============================================THIS IS THE OVERALL FUNCTION=======================================================
 def synthesize_dictionary_batch(subsDict, langDict, skipSynthesize=False, secondPass=False):
     if not skipSynthesize:
         if cloudConfig['tts_service'] == 'azure':
             subsDict = synthesize_text_azure_batch(subsDict, langDict, skipSynthesize, secondPass)
+            
+        elif cloudConfig['tts_service'] == 'elevenlabs':
+            subsDict = synthesize_text_elevenlabs_batch()
         else:
             print('ERROR: Batch TTS only supports azure at this time')
             input('Press enter to exit...')
@@ -469,6 +533,9 @@ def synthesize_dictionary(subsDict, langDict, skipSynthesize=False, secondPass=F
                     audio.save_to_wav_file(filePathStem+"_p1.mp3")
                 elif config['debug_mode'] and secondPass == True:
                     audio.save_to_wav_file(filePathStem+"_p2.mp3")
+            
+            elif cloudConfig['tts_service'] == "elevenlabs":
+                audio = synthesize_text_elevenlabs_batch()
 
         subsDict[key]['TTS_FilePath'] = filePath
 
