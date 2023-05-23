@@ -1,7 +1,7 @@
 import os
-from youtube_transcript_api import YouTubeTranscriptApi
 from pytube import YouTube
 from urllib.parse import parse_qs, urlparse
+from pvleopard import Leopard
 
 def download_youtube_and_generate_srt():
     def parse_video_id(url):
@@ -35,14 +35,21 @@ def download_youtube_and_generate_srt():
     video = yt.streams.get_highest_resolution()
     video.download(output_path=os.path.join(outputs_directory, "video"), filename=video_output_file)
 
-    # Get the transcript for the YouTube video
-    transcript = YouTubeTranscriptApi.get_transcript(video_id)
+    access_key = "YOUR_ACCESS_KEY"  # Replace with your actual access key
+    model_path = "PATH_TO_LEOPARD_MODEL_FILE"  # Replace with the path to the Leopard model file
+    library_path = "PATH_TO_LEOPARD_LIBRARY"  # Replace with the path to the Leopard library
+
+    # Initialize Picovoice Leopard
+    leopard = Leopard(access_key=access_key, model_path=model_path, library_path=library_path)
+
+    # Transcribe the downloaded video
+    transcript = leopard.transcribe(video_output_path)
 
     # Generate the SRT content
     srt_content = ""
     for i, segment in enumerate(transcript):
         start = segment['start']
-        end = segment['start'] + segment['duration']
+        end = segment['end']
         text = segment['text']
 
         # Format the time in SRT format (HH:MM:SS,sss)
@@ -64,3 +71,7 @@ def download_youtube_and_generate_srt():
     # Save the SRT content to a file
     with open(srt_output_path, 'w', encoding='utf-8') as f:
         f.write(srt_content)
+
+    print(f"SRT file generated: {srt_output_path}")
+
+download_youtube_and_generate_srt()
