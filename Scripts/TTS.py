@@ -20,12 +20,12 @@ from Scripts.utils import parseBool
 
 
 import requests
-from elevenlabs import clone, generate, play, set_api_key
-from elevenlabs.api import History
+from elevenlabs import *
+from elevenlabslib import ElevenLabsUser
 
 # Configuration for the elevenlabs API
-XI_API_KEY = "<xi-api-key>"
-set_api_key(XI_API_KEY)
+api_key = "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"
+user = ElevenLabsUser(api_key)
 
 # Get variables from config
 
@@ -426,48 +426,149 @@ def synthesize_text_azure_batch(subsDict, langDict, skipSynthesize=False, second
 
 #=============================================THIS IS THE ELEVEN LABS SECTION==========================================================
 
-def synthesize_text_elevenlabs_batch():
-    VOICE_SAMPLE_PATH1 = "<path-to-voice-sample1>"
-    VOICE_SAMPLE_PATH2 = "<path-to-voice-sample2>"
-    add_voice_url = "<add-voice-endpoint-url>"
+def synthesize_text_elevenlabs(text, duration, voiceName, languageCode):
+    
+    voiceName = user.get_voices_by_name("Antoni")[0]
+    
+    # Create tag for desired duration of clip
+    durationTag = f'<mstts:audioduration value="{str(duration)}ms"/>'
+    
+    # Set string for tag to set leading and trailing silence times to zero
+    leadSilenceTag = '<mstts:silence  type="Leading-exact" value="0ms"/>'
+    tailSilenceTag = '<mstts:silence  type="Tailing-exact" value="0ms"/>'
+    
+    # Create SSML syntax for Azure TTS
+    ssml = f"<speak version='1.0' xml:lang='{languageCode}' xmlns='http://www.w3.org/2001/10/synthesis' " \
+        "xmlns:mstts='http://www.w3.org/2001/mstts'>" \
+        f"<voice name='{voiceName}'>{durationTag}{leadSilenceTag}{tailSilenceTag}" \
+        f"{text}</voice></speak>"
+        
+    stream = voiceName.generate_audio_bytes()
+    return stream
 
-    headers = {
-        "Accept": "application/json",
-        "xi-api-key": XI_API_KEY
-    }
-    data = {
-        'name': 'Voice name',
-        'labels': '{"accent": "American", "gender": "Female"}',
-        'description': 'An old American male voice with a slight hoarseness in his throat. Perfect for news.'
-    }
-    files = [
-        ('files', ('sample1.mp3', open(VOICE_SAMPLE_PATH1, 'rb'), 'audio/mpeg')),
-        ('files', ('sample2.mp3', open(VOICE_SAMPLE_PATH2, 'rb'), 'audio/mpeg'))
-    ]
-    response = requests.post(add_voice_url, headers=headers, data=data, files=files)
-    voice_id = response.json()["voice_id"]
+def synthesize_text_elevenlabs_batch(subsDict, langDict, skipSynthesize=False, secondPass=False):
+    
+    def create_request_payload(remainingEntriesDict):
+        # Create SSML for all subtitles
+        ssmlJson = []
+        payloadSizeInBytes = 0
+        tempDict = dict(remainingEntriesDict) # Need to do this to avoid changing the original dict which would mess with the loop
+        
+        for key, value in tempDict.items():
+            text = tempDict[key]['translated_text']
+            duration = tempDict[key]['duration_ms_buffered']
+            language = langDict['languageCode']
+            voice = user.get_voices_by_name("Antoni")[0]
+            
+            # Create tag for desired duration of clip
+            durationTag = f'<mstts:audioduration value="{str(duration)}ms"/>'
+            
+            # Process text using pronunciation customization set by user
+            text = add_all_pronunciation_overrides(text)
+            
+            # Create the SSML for each subtitle
+            ssml = f"<speak version='1.0' xml:lang='{language}' xmlns='http://www.w3.org/2001/10/synthesis' " \
+            "xmlns:mstts='http://www.w3.org/2001/mstts'>" \
+            # f"<voice name='{voice}'>{sentencePauseTag}{commaPauseTag}{durationTag}{leadSilenceTag}{tailSilenceTag}" \
+            f"{text}</voice></speak>"
+            ssmlJson.append({"text": ssml})
+            
+            # Construct request payload with SSML
+            # Reconstruct payload with every loop with new SSML so that the payload size is accurate
+            now = datetime.datetime.now()
+            pendingPayload = {
+                'displayName': langDict['languageCode'] + '-' + now.strftime("%Y-%m-%d %H:%M:%S"),
+                'description': 'Batch synthesis of ' + langDict['languageCode'] + ' subtitles',
+                "textType": "SSML",
+                # To use custom voice, see original example code script linked from azure_batch.py
+                "inputs": ssmlJson,
+                "properties": {
+                    "outputFormat": "audio-48khz-192kbitrate-mono-mp3",
+                    "wordBoundaryEnabled": False,
+                    "sentenceBoundaryEnabled": False,
+                    "concatenateResult": False,
+                    "decompressOutputFiles": False
+                    },
+                }
+            
+            payloadSizeInBytes = len(str(json.dumps(pendingPayload)).encode('utf-8')) 
 
-    # Get default voice settings
-    response = requests.get(
-        "https://api.elevenlabs.io/v1/voices/settings/default",
-        headers={"Accept": "application/json"}
-    ).json()
-    stability, similarity_boost = response["stability"], response["similarity_boost"]
+            if payloadSizeInBytes > 495000 or len(ssmlJson) > 995: # Leave some room for anything unexpected. Also number of inputs must be below 1000
+                # If payload would be too large, ignore the last entry and break out of loop
+                return payload, remainingEntriesDict
+            else:
+                payload = copy.deepcopy(pendingPayload) # Must make deepycopy otherwise ssmlJson will be updated in both instead of just pendingPayload
+                # Remove entry from remainingEntriesDict if it was added to payload
+                remainingEntriesDict.pop(key)
+            
+            return payload, remainingEntriesDict
+        
+        # Ending of creating the payload function
+        
+        # Create payloads, split into multiple if necessary
+    payloadList = []
+    remainingPayloadEntriesDict = dict(subsDict) # Will remove entries as they are added to payloads
+    while len(remainingPayloadEntriesDict) > 0:
+        payloadToAppend, remainingPayloadEntriesDict = create_request_payload(remainingPayloadEntriesDict)
+        payloadList.append(payloadToAppend)
+    
+    # Tell user if request will be broken up into multiple payloads
+    if len(payloadList) > 1:
+        print(f'Payload will be broken up into {len(payloadList)} requests (due to Azure size limitations).')
 
-    # Generate speech using ElevenLabs API
-    text = "Some very long text to be read by the voice"
-    voice = clone(
-        name="Voice Name",
-        description="An old American male voice with a slight hoarseness in his throat. Perfect for news.",
-        files=["./sample1.mp3", "./sample2.mp3"],
-    )
+    # Use to keep track of filenames downloaded via separate zip files. WIll remove as they are downloaded
+    remainingDownloadedEntriesList = list(subsDict.keys())
 
-    audio = generate(text=text, voice=voice)
+    # Clear out workingFolder
+    for filename in os.listdir('workingFolder'):
+        if not config['debug_mode']:
+            os.remove(os.path.join('workingFolder', filename))
+            
+    # Loop through payloads and submit to Azure
+    for payload in payloadList:
+        # Reset job_id from previous loops
+        job_id = None
+        
+        # Send the request to Eleven Labs API
+        job_id = voice.generate_audio_bytes(payload)
+        
+        # Wait for the job to finish
+        if job_id is not None:
+            status = "Running"
+            resultDownloadLink = None
+            
+            if resultDownloadLink is not None:
+                # Download zip file
+                urlResponse = urlopen(resultDownloadLink)
+                
+                                # Process zip file    
+                virtualResultZip = io.BytesIO(urlResponse.read())
+                zipdata = zipfile.ZipFile(virtualResultZip)
+                zipinfos = zipdata.infolist()
 
-    # Save the audio
-    OUTPUT_PATH = "<path-to-file>"
-    with open(OUTPUT_PATH, 'wb') as f:
-        f.write(audio)
+                # Reorder zipinfos so the file names are in alphanumeric order
+                zipinfos.sort(key=lambda x: x.filename)
+
+                # Only extract necessary files, and rename them while doing so
+                for file in zipinfos:
+                    if file.filename == "summary.json":
+                        #zipdata.extract(file, 'workingFolder') # For debugging
+                        pass
+                    elif "json" not in file.filename:
+                        # Rename file to match first entry in remainingDownloadedEntriesDict, then extract
+                        currentFileNum = remainingDownloadedEntriesList[0]
+                        file.filename = str(currentFileNum) + '.mp3'
+                        #file.filename = file.filename.lstrip('0')
+
+                        # Add file path to subsDict then remove from remainingDownloadedEntriesList
+                        subsDict[currentFileNum]['TTS_FilePath'] = os.path.join('workingFolder', str(currentFileNum)) + '.mp3'
+                        # Extract file
+                        zipdata.extract(file, 'workingFolder')
+                        # Remove entry from remainingDownloadedEntriesList
+                        remainingDownloadedEntriesList.pop(0)
+                
+        
+    return subsDict
         
 
 
@@ -478,7 +579,7 @@ def synthesize_dictionary_batch(subsDict, langDict, skipSynthesize=False, second
             subsDict = synthesize_text_azure_batch(subsDict, langDict, skipSynthesize, secondPass)
             
         elif cloudConfig['tts_service'] == 'elevenlabs':
-            subsDict = synthesize_text_elevenlabs_batch()
+            subsDict = synthesize_text_elevenlabs_batch(subsDict, langDict, skipSynthesize, secondPass)
         else:
             print('ERROR: Batch TTS only supports azure at this time')
             input('Press enter to exit...')
@@ -533,9 +634,21 @@ def synthesize_dictionary(subsDict, langDict, skipSynthesize=False, secondPass=F
                     audio.save_to_wav_file(filePathStem+"_p1.mp3")
                 elif config['debug_mode'] and secondPass == True:
                     audio.save_to_wav_file(filePathStem+"_p2.mp3")
+                    
+            elif cloudConfig["tts_service"] == "elevenlabs":
+                audio = synthesize_text_elevenlabs(value['translated_text'], duration, voiceName="Antoni", languageCode="Hi")
+                with open(filePath, "wb", encoding='utf-8') as out:
+                    out.write(audio)
+                
+                # If debug mode, write to files after Google TTS
+                if config['debug_mode'] and secondPass == False:
+                    with open(filePathStem+"_p1.mp3", "wb", encoding='utf-8') as out:
+                        out.write(audio)
+                elif config['debug_mode'] and secondPass == True:
+                    with open(filePathStem+"_p2.mp3", "wb", encoding='utf-8') as out:
+                        out.write(audio)
+                
             
-            elif cloudConfig['tts_service'] == "elevenlabs":
-                audio = synthesize_text_elevenlabs_batch()
 
         subsDict[key]['TTS_FilePath'] = filePath
 
