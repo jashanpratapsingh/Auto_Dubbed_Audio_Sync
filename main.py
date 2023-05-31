@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-
-# Project Title: Auto Synced Translated Dubs (https://github.com/ThioJoe/Auto-Synced-Translated-Dubs)
-# Author / Project Owner: "ThioJoe" (https://github.com/ThioJoe)
 # License: GPLv3
 # NOTE: By contributing to this project, you agree to the terms of the GPLv3 license, and agree to grant the project owner the right to also provide or sell this software, including your contribution, to anyone under any other license, with no compensation to you.
 
@@ -18,6 +15,7 @@ import Scripts.translate as translate
 from Scripts.utils import parseBool
 from Scripts.youtube import download_youtube_and_generate_srt
 from Scripts.TrackAdder import add_audio_tracks_to_video
+from Scripts.merging_video_and_audio import combine_video_with_audio
 
 # Import built in modules
 import re
@@ -290,6 +288,12 @@ for langNum, langData in batchSettings.items():
 print("\n================================================================")
 print("Combining audio files with video")
 add_audio_tracks_to_video("./Outputs/video", "../Scripts/video.mp4", True, "./Scripts/background.mp3", True, "eng")
+
+#This code is for combining the audio files of specific languages with the video to be combined with renamed video files
+print("\n================================================================")
+print("Generating video files of different languages")
+combine_video_with_audio()
+
 
 # Play a system sound to indicate completion
 sound_name = winsound.MB_ICONASTERISK  # represents the 'Asterisk' system sound
