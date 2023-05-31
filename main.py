@@ -15,7 +15,9 @@ import Scripts.translate as translate
 from Scripts.utils import parseBool
 from Scripts.youtube import download_youtube_and_generate_srt
 from Scripts.TrackAdder import add_audio_tracks_to_video
-from Scripts.merging_video_and_audio import combine_video_with_audio
+from Scripts.merging_video_and_audio import combine_video_with_audio_and_srt
+from Scripts.background_music_adder import combine_audio_with_background_music
+from Scripts.moved_folders_to_repository import move_folders_to_repository
 
 # Import built in modules
 import re
@@ -284,15 +286,26 @@ for langNum, langData in batchSettings.items():
     # Process current fallback language
     process_language(langData, processedCount, totalLanguages)
     
-#This code is for combing the generated audio files with the video 
+# #This code is for combing the generated audio files with the video 
+# print("\n================================================================")
+# print("Combining audio files with video")
+# add_audio_tracks_to_video("./Outputs/video", "../Scripts/video.mp4", True, "./Scripts/background.mp3", True, "eng")
+
+#This code for adding the background music to the generated audio files
 print("\n================================================================")
-print("Combining audio files with video")
-add_audio_tracks_to_video("./Outputs/video", "../Scripts/video.mp4", True, "./Scripts/background.mp3", True, "eng")
+print("Adding background music")
+combine_audio_with_background_music()
+
 
 #This code is for combining the audio files of specific languages with the video to be combined with renamed video files
 print("\n================================================================")
 print("Generating video files of different languages")
-combine_video_with_audio()
+combine_video_with_audio_and_srt()
+
+#This code move the generated folders to the database directory
+print("\n================================================================")
+print("Moving the files to database directory")
+move_folders_to_repository()
 
 
 # Play a system sound to indicate completion

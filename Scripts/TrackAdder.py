@@ -29,7 +29,7 @@ def add_audio_tracks_to_video(tracksFolder, videoToProcess, useSoundEffectsTrack
 
         # Whether to merge a sound effect track into each audio track before adding to the video
         # The original audio track files will remain unchanged
-    useSoundEffectsTrack = False
+    useSoundEffectsTrack = True
 
         # If applicable, the filename of the sound effects or music track to add to each audio track before adding to the video
         # If "useSoundEffectsTrack" is set to False, this will be ignored
@@ -46,13 +46,13 @@ def add_audio_tracks_to_video(tracksFolder, videoToProcess, useSoundEffectsTrack
 
     #========================================================================================================
     # Check if current folder is named "Tools"
-    if os.path.basename(os.getcwd()) == 'Tools':
+    if os.path.basename(os.getcwd()) == 'Scripts':
         os.chdir('..')
     # Check if current folder contains a folder named "Tools"
     elif 'Tools' in os.listdir():
         pass
     else:
-        print("Warning: Not currently in the 'Tools' folder. The script may not work properly.")
+        print("Warning: Not currently in the 'Scripts' folder. The script may not work properly.")
 
     # Set the path to include the project root folder, so Scripts imports are valid
     sys.path.insert(1, os.getcwd())

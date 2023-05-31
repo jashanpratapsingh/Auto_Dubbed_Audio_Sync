@@ -4,7 +4,8 @@ from moviepy.editor import VideoFileClip, AudioFileClip
 def combine_video_with_audio_and_srt():
     # Get the paths for audio directory and video file
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    audio_directory = os.path.join(script_directory, "../Outputs/video")
+    audio_directory = os.path.join(script_directory, "../Outputs/video/merged_audios")
+    srt_directory = os.path.join(script_directory, "../Outputs/video")
     video_file = os.path.join(script_directory, "../Outputs/video/video.mp4")
 
     # Create the output directory if it doesn't exist
@@ -13,12 +14,12 @@ def combine_video_with_audio_and_srt():
 
     # Iterate over the audio files in the directory
     for audio_filename in os.listdir(audio_directory):
-        if audio_filename.endswith('.aac'):  # Check if the file is an audio file
+        if audio_filename.endswith('.mp3'):  # Check if the file is an audio file
             audio_path = os.path.join(audio_directory, audio_filename)
 
             # Extract language name and code from audio filename
             language_name = audio_filename.split(' - ')[1]
-            language_code = audio_filename.split(' - ')[2].split('.aac')[0]
+            language_code = audio_filename.split(' - ')[2].split('.mp3')[0]
 
             # Set the output video file path
             output_filename = f"video_{language_name}.mp4"
@@ -33,7 +34,7 @@ def combine_video_with_audio_and_srt():
 
             # Find the corresponding SRT file
             srt_filename = f"video - {language_name} - {language_code}.srt"
-            srt_path = os.path.join(audio_directory, srt_filename)
+            srt_path = os.path.join(srt_directory, srt_filename)
 
             # Check if the SRT file exists
             if os.path.exists(srt_path):

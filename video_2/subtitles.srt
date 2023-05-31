@@ -1,0 +1,75 @@
+1
+00:00:00,000 --> 00:00:03,540
+If you look in your C drive in 
+Windows, some of you may notice  
+
+2
+00:00:03,540 --> 00:00:08,039
+a folder called Windows.old. But what 
+exactly is it, and is it safe to delete?
+
+3
+00:00:08,039 --> 00:00:12,540
+The Windows.old folder may appear after a 
+major upgrade, like from Windows 10 to 11,  
+
+4
+00:00:12,540 --> 00:00:16,980
+and simply contains a backup of your old 
+installation of Windows. In this case,  
+
+5
+00:00:16,980 --> 00:00:20,820
+it shouldn't contain a backup of your 
+personal files, just the system files.
+
+6
+00:00:20,820 --> 00:00:25,980
+However, you may also have a Windows.old 
+folder if you Reset Windows, where it may  
+
+7
+00:00:25,980 --> 00:00:30,540
+have given you the option to put all your 
+personal files into that Windows.old folder,  
+
+8
+00:00:30,540 --> 00:00:33,300
+so be sure to copy any files 
+that you want out of it.
+
+9
+00:00:33,300 --> 00:00:37,500
+If the folder is from an upgrade, the 
+purpose is to allow you to roll back and  
+
+10
+00:00:37,500 --> 00:00:41,220
+undo the upgrade if you want. So if you 
+use Windows for a while with no issues,  
+
+11
+00:00:41,220 --> 00:00:44,820
+then it is safe to delete to free 
+up space. If it's after a Reset,  
+
+12
+00:00:44,820 --> 00:00:48,540
+you can delete it once you're sure you 
+backed up everything you want from in there.
+
+13
+00:00:48,540 --> 00:00:52,440
+To delete it properly, search the start 
+menu for "Disk Cleanup" and run it as  
+
+14
+00:00:52,440 --> 00:00:55,500
+Administrator - that's important. 
+Choose the C Drive, and look here  
+
+15
+00:00:55,500 --> 00:00:59,760
+for "Previous Windows Installations", check 
+that box and hit OK, and it will delete it.
+
