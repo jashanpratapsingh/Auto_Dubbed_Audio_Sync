@@ -14,12 +14,12 @@ def combine_video_with_audio_and_srt():
 
     # Iterate over the audio files in the directory
     for audio_filename in os.listdir(audio_directory):
-        if audio_filename.endswith('.mp3'):  # Check if the file is an audio file
+        if audio_filename.endswith('.aac'):  # Check if the file is an audio file
             audio_path = os.path.join(audio_directory, audio_filename)
 
             # Extract language name and code from audio filename
             language_name = audio_filename.split(' - ')[1]
-            language_code = audio_filename.split(' - ')[2].split('.mp3')[0]
+            language_code = audio_filename.split(' - ')[2].split('.aac')[0]
 
             # Set the output video file path
             output_filename = f"video_{language_name}.mp4"

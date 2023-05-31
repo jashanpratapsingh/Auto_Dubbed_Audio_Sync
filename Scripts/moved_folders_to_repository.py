@@ -19,11 +19,17 @@ def move_folders_to_repository():
     new_repository_number = highest_number + 1
     new_repository_directory = os.path.join(database_directory, f"video_{new_repository_number}")
 
-    # Move the "Outputs" and "final_videos" folders to the new repository
+    # Copy the "Outputs" and "final_videos" directories to the new repository
     outputs_directory = os.path.join(base_directory, "Outputs")
     final_videos_directory = os.path.join(base_directory, "final_videos")
 
-    shutil.move(outputs_directory, new_repository_directory)
-    shutil.move(final_videos_directory, new_repository_directory)
+    shutil.copytree(outputs_directory, os.path.join(new_repository_directory, "Outputs"))
+    shutil.copytree(final_videos_directory, os.path.join(new_repository_directory, "final_videos"))
+
+    # Remove the original directories
+    shutil.rmtree(outputs_directory)
+    shutil.rmtree(final_videos_directory)
 
     print(f"Moved folders to repository: {new_repository_directory}")
+
+move_folders_to_repository()
